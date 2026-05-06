@@ -48,30 +48,29 @@ function startGPSTracking() {
   _gpsWatchId = navigator.geolocation.watchPosition(
     async (pos) => {
       const { latitude: lat, longitude: lon, accuracy } = pos.coords;
-      if (accuracy > 50) return; // ignore poor fixes
+      if (accuracy > 50) return;
       if (_gpsLastPoint) {
         const d = haversineMeters(_gpsLastPoint.lat, _gpsLastPoint.lon, lat, lon);
-        if (d > 5) { // only count if moved > 5m (filters stationary noise)
+        if (d > 5) {
           _gpsTotalMeters += d;
-          _gpsLastPoint = { lat, lon };
+          _gpsPoints.push({ lat, lon, t: Date.now() });
         }
       } else {
-        _gpsLastPoint = { lat, lon };
+        _gpsPoints.push({ lat, lon, t: Date.now() });
         _gpsStartCoords = { lat, lon };
-        // auto-fill start location
         const addr = await reverseGeocode(lat, lon);
-        const startInput = document.getElementById('trip-start');
-        if (startInput && !startInput.value) startInput.value = addr;
+        const startEl = document.getElementById('trip-start');
+        if (startEl && !startEl.value) startEl.value = addr;
       }
+      _gpsLastPoint = { lat, lon };
       const km = (_gpsTotalMeters / 1000).toFixed(2);
-      document.getElementById('gps-status').textContent = `GPS active \u2022 ${km} km tracked`;
+      document.getElementById('gps-status').textContent = `GPS active - ${km} km tracked (${_gpsPoints.length} pts)`;
       document.getElementById('trip-km').value = km;
     },
     (err) => {
       document.getElementById('gps-status').textContent = 'GPS error: ' + err.message;
-      document.getElementById('gps-status').className = 'gps-status gps-error';
     },
-    { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+    { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 }
   );
 }
 
@@ -83,50 +82,43 @@ async function stopGPSTracking() {
   document.getElementById('gps-btn-start').style.display = 'inline-flex';
   document.getElementById('gps-btn-stop').style.display = 'none';
   const km = (_gpsTotalMeters / 1000).toFixed(2);
+  document.getElementById('gps-status').textContent = `GPS stopped - ${km} km recorded`;
+  document.getElementById('gps-status').className = 'gps-status';
   document.getElementById('trip-km').value = km;
-  document.getElementById('gps-status').textContent = `Trip ended \u2022 ${km} km recorded`;
-  document.getElementById('gps-status').className = 'gps-status gps-done';
-
-  // Reverse geocode end point
   if (_gpsLastPoint) {
     const addr = await reverseGeocode(_gpsLastPoint.lat, _gpsLastPoint.lon);
-    const endInput = document.getElementById('trip-end');
-    if (endInput && !endInput.value) endInput.value = addr;
-    // Auto-save this as a saved location
-    if (addr) addSavedLocation({ name: addr, address: addr }).catch(()=>{});
+    const endEl = document.getElementById('trip-end');
+    if (endEl && !endEl.value) endEl.value = addr;
   }
 }
 
-function setupLocationAutocomplete(inputId, savedLocs) {
-  const input = document.getElementById(inputId);
-  if (!input || !savedLocs.length) return;
-  const datalistId = inputId + '-list';
-  let dl = document.getElementById(datalistId);
-  if (!dl) {
-    dl = document.createElement('datalist');
-    dl.id = datalistId;
-    document.body.appendChild(dl);
+function calcKm() {
+  const s = parseFloat(document.getElementById('trip-odo-start').value);
+  const e = parseFloat(document.getElementById('trip-odo-end').value);
+  if (!isNaN(s) && !isNaN(e) && e > s) {
+    document.getElementById('trip-km').value = (e - s).toFixed(1);
   }
-  dl.innerHTML = savedLocs.map(l => `<option value="${l.address}">`).join('');
-  input.setAttribute('list', datalistId);
 }
 
 async function renderLogTrip(params = {}) {
   const el = document.getElementById('page-content');
   const vehicles = await getAllVehicles();
   const activeV = await getActiveVehicle();
-  const savedLocs = await getAllSavedLocations();
   const editId = params.editId || null;
   let existing = null;
   if (editId) existing = await getTrip(editId);
   const t = existing || {};
   const isEdit = !!existing;
 
-  // Reset GPS state
-  if (_gpsWatchId !== null) {
-    navigator.geolocation.clearWatch(_gpsWatchId);
-    _gpsWatchId = null;
-  }
+  // Load saved locations for datalist
+  let savedLocs = [];
+  try {
+    const db = await getDB();
+    const tx = db.transaction('savedLocations', 'readonly');
+    savedLocs = await tx.store.getAll();
+  } catch(e) {}
+
+  const locOptions = savedLocs.map(l => `<option value="${l.name}">`).join('');
 
   el.innerHTML = `
     <div class="page-header">
@@ -135,17 +127,20 @@ async function renderLogTrip(params = {}) {
     </div>
 
     <div class="gps-tracker-card">
-      <div class="gps-tracker-title">\uD83D\uDCCD GPS Trip Tracker</div>
-      <div id="gps-status" class="gps-status">Tap Start to auto-record distance &amp; locations</div>
-      <div class="gps-btn-row">
-        <button id="gps-btn-start" class="btn btn-primary" onclick="startGPSTracking()">\u25B6 Start GPS</button>
-        <button id="gps-btn-stop" class="btn btn-danger" onclick="stopGPSTracking()" style="display:none">\u23F9 Stop &amp; Save</button>
+      <div class="gps-tracker-title">&#128205; GPS Trip Tracker</div>
+      <div class="gps-tracker-sub">Tap Start to auto-record distance &amp; locations</div>
+      <div class="gps-controls">
+        <button id="gps-btn-start" class="btn btn-primary" onclick="startGPSTracking()">&#9654; Start GPS</button>
+        <button id="gps-btn-stop" class="btn btn-danger" onclick="stopGPSTracking()" style="display:none">&#9646;&#9646; Stop GPS</button>
       </div>
+      <div id="gps-status" class="gps-status"></div>
     </div>
 
     <div class="form-group">
       <label>Vehicle</label>
-      <select id="trip-vehicle">${vehicles.map(v => `<option value="${v.id}" ${(t.vehicleId || (activeV && activeV.id)) === v.id ? 'selected' : ''}>${v.nickname || v.make + ' ' + v.model}</option>`).join('')}</select>
+      <select id="trip-vehicle">
+        ${vehicles.map(v => `<option value="${v.id}" ${(t.vehicleId || (activeV && activeV.id)) === v.id ? 'selected' : ''}>${v.nickname || v.make + ' ' + v.model}</option>`).join('')}
+      </select>
     </div>
     <div class="form-group">
       <label>Date</label>
@@ -154,57 +149,49 @@ async function renderLogTrip(params = {}) {
     <div class="form-group">
       <label>Trip Type</label>
       <select id="trip-type">
-        <option value="business" ${(!t.type || t.type === 'business') ? 'selected' : ''}>Business</option>
-        <option value="personal" ${t.type === 'personal' ? 'selected' : ''}>Personal</option>
+        <option value="Business" ${(t.type||'Business')==='Business'?'selected':''}>Business</option>
+        <option value="Personal" ${t.type==='Personal'?'selected':''}>Personal</option>
+        <option value="Medical" ${t.type==='Medical'?'selected':''}>Medical</option>
+        <option value="Moving" ${t.type==='Moving'?'selected':''}>Moving</option>
       </select>
     </div>
     <div class="form-group">
       <label>Purpose</label>
-      <select id="trip-purpose">${PURPOSES.map(p => `<option ${t.purpose === p ? 'selected' : ''}>${p}</option>`).join('')}</select>
+      <select id="trip-purpose">
+        ${PURPOSES.map(p => `<option value="${p}" ${t.purpose===p?'selected':''}>${p}</option>`).join('')}
+      </select>
     </div>
     <div class="form-group">
       <label>Start Location</label>
-      <input id="trip-start" value="${t.start_location || ''}" placeholder="123 Main St, Toronto" />
+      <input type="text" id="trip-start" value="${t.start_location || ''}" placeholder="123 Main St, Toronto" list="loc-list" />
+      <datalist id="loc-list">${locOptions}</datalist>
     </div>
     <div class="form-group">
       <label>Destination</label>
-      <input id="trip-end" value="${t.end_location || ''}" placeholder="456 King St, Toronto" />
+      <input type="text" id="trip-end" value="${t.end_location || ''}" placeholder="456 King St, Toronto" list="loc-list" />
     </div>
     <div class="form-row">
       <div class="form-group">
         <label>Odometer Start (km)</label>
-        <input type="number" id="trip-odo-start" value="${t.odometer_start || ''}" placeholder="50000" oninput="calcKm()" />
+        <input type="number" id="trip-odo-start" value="${t.odometer_start || ''}" placeholder="e.g. 50000" oninput="calcKm()" />
       </div>
       <div class="form-group">
         <label>Odometer End (km)</label>
-        <input type="number" id="trip-odo-end" value="${t.odometer_end || ''}" placeholder="50025" oninput="calcKm()" />
+        <input type="number" id="trip-odo-end" value="${t.odometer_end || ''}" placeholder="e.g. 50025" oninput="calcKm()" />
       </div>
     </div>
     <div class="form-group">
       <label>Distance Driven (km)</label>
-      <input type="number" id="trip-km" value="${t.km_driven || ''}" placeholder="25.0" step="0.1" />
-      <div id="km-hint" class="auto-calc"></div>
+      <input type="number" id="trip-km" value="${t.km_driven || ''}" placeholder="Enter km or use odometer/GPS above" step="0.1" />
     </div>
     <div class="form-group">
       <label>Notes (optional)</label>
-      <textarea id="trip-notes" rows="2" placeholder="Client name, address, etc.">${t.notes || ''}</textarea>
+      <textarea id="trip-notes" placeholder="Client name, address, etc.">${t.notes || ''}</textarea>
     </div>
-    <button class="btn btn-primary btn-full" onclick="saveTrip(${editId || 'null'})">${isEdit ? 'Update Trip' : 'Save Trip'}</button>
-    <button class="btn btn-secondary btn-full" onclick="navigate('trips')">Cancel</button>
+    <button class="btn btn-primary btn-block" onclick="saveTrip(${editId || 'null'})">Save Trip</button>
+    <button class="btn btn-secondary btn-block" onclick="navigate('trips')">Cancel</button>
   `;
-
-  // Set up saved location autocomplete on both location fields
-  setupLocationAutocomplete('trip-start', savedLocs);
-  setupLocationAutocomplete('trip-end', savedLocs);
-}
-
-function calcKm() {
-  const s = parseFloat(document.getElementById('trip-odo-start').value);
-  const e = parseFloat(document.getElementById('trip-odo-end').value);
-  if (!isNaN(s) && !isNaN(e) && e > s) {
-    document.getElementById('trip-km').value = (e - s).toFixed(1);
-    document.getElementById('km-hint').textContent = 'Auto-calculated from odometer';
-  }
+  calcKm();
 }
 
 async function saveTrip(editId) {
@@ -220,19 +207,31 @@ async function saveTrip(editId) {
   const notes = document.getElementById('trip-notes').value.trim();
 
   if (!date || !start_location || !end_location || !km_driven) {
-    alert('Please fill in date, start, destination, and distance');
+    alert('Please fill in date, start location, destination, and distance driven.');
     return;
   }
 
-  // Stop GPS if still running
-  if (_gpsWatchId !== null) await stopGPSTracking();
-
-  // Auto-save locations
-  if (start_location) addSavedLocation({ name: start_location, address: start_location }).catch(()=>{});
-  if (end_location) addSavedLocation({ name: end_location, address: end_location }).catch(()=>{});
+  // Save locations for future autocomplete
+  try {
+    const db = await getDB();
+    const tx = db.transaction('savedLocations', 'readwrite');
+    for (const loc of [start_location, end_location]) {
+      if (loc) {
+        const existing = await tx.store.index('name').get(loc);
+        if (!existing) await tx.store.add({ name: loc, count: 1 });
+        else await tx.store.put({ ...existing, count: (existing.count || 1) + 1 });
+      }
+    }
+    await tx.done;
+  } catch(e) {}
 
   const record = {
-    vehicleId, date, type, purpose, start_location, end_location,
+    vehicleId,
+    date,
+    type,
+    purpose,
+    start_location,
+    end_location,
     odometer_start: odometer_start ? Number(odometer_start) : '',
     odometer_end: odometer_end ? Number(odometer_end) : '',
     km_driven: Number(km_driven),
@@ -252,7 +251,7 @@ async function saveTrip(editId) {
 async function confirmDeleteTrip(id) {
   const html = `
     <div class="modal-title">Delete Trip?</div>
-    <p class="text-muted">This trip will be permanently deleted.</p>
+    <p class="text-muted">This will permanently delete this trip record.</p>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
       <button class="btn btn-danger" onclick="doDeleteTrip(${id})">Delete</button>
