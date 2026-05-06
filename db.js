@@ -1,10 +1,11 @@
-// db.js - All IndexedDB operations via idb library
+// db.js - All IndexedDB operations via idb library (V2: added maintenance, expenses, savedLocations)
 let _db = null;
 
 async function getDB() {
   if (_db) return _db;
-  _db = await idb.openDB('logbook-db', 1, {
-    upgrade(db) {
+  _db = await idb.openDB('logbook-db', 2, {
+    upgrade(db, oldVersion) {
+      // Version 1 stores
       if (!db.objectStoreNames.contains('vehicles')) {
         const vs = db.createObjectStore('vehicles', { keyPath: 'id', autoIncrement: true });
         vs.createIndex('active', 'active');
@@ -18,6 +19,21 @@ async function getDB() {
         const fs = db.createObjectStore('fuel', { keyPath: 'id', autoIncrement: true });
         fs.createIndex('vehicleId', 'vehicleId');
         fs.createIndex('date', 'date');
+      }
+      // Version 2 stores
+      if (!db.objectStoreNames.contains('maintenance')) {
+        const ms = db.createObjectStore('maintenance', { keyPath: 'id', autoIncrement: true });
+        ms.createIndex('vehicleId', 'vehicleId');
+        ms.createIndex('date', 'date');
+      }
+      if (!db.objectStoreNames.contains('expenses')) {
+        const es = db.createObjectStore('expenses', { keyPath: 'id', autoIncrement: true });
+        es.createIndex('vehicleId', 'vehicleId');
+        es.createIndex('date', 'date');
+      }
+      if (!db.objectStoreNames.contains('savedLocations')) {
+        const sl = db.createObjectStore('savedLocations', { keyPath: 'id', autoIncrement: true });
+        sl.createIndex('name', 'name');
       }
     }
   });
@@ -112,6 +128,79 @@ async function getFuelEntry(id) {
   return db.get('fuel', id);
 }
 
+// --- Maintenance ---
+async function getAllMaintenance() {
+  const db = await getDB();
+  const recs = await db.getAll('maintenance');
+  return recs.sort((a, b) => b.date.localeCompare(a.date));
+}
+async function getMaintenanceByVehicle(vehicleId) {
+  const db = await getDB();
+  const recs = await db.getAllFromIndex('maintenance', 'vehicleId', vehicleId);
+  return recs.sort((a, b) => b.date.localeCompare(a.date));
+}
+async function addMaintenance(m) {
+  const db = await getDB();
+  return db.add('maintenance', m);
+}
+async function updateMaintenance(m) {
+  const db = await getDB();
+  return db.put('maintenance', m);
+}
+async function deleteMaintenance(id) {
+  const db = await getDB();
+  return db.delete('maintenance', id);
+}
+async function getMaintenanceEntry(id) {
+  const db = await getDB();
+  return db.get('maintenance', id);
+}
+
+// --- General Expenses ---
+async function getAllExpenses() {
+  const db = await getDB();
+  const recs = await db.getAll('expenses');
+  return recs.sort((a, b) => b.date.localeCompare(a.date));
+}
+async function getExpensesByVehicle(vehicleId) {
+  const db = await getDB();
+  const recs = await db.getAllFromIndex('expenses', 'vehicleId', vehicleId);
+  return recs.sort((a, b) => b.date.localeCompare(a.date));
+}
+async function addExpense(e) {
+  const db = await getDB();
+  return db.add('expenses', e);
+}
+async function updateExpense(e) {
+  const db = await getDB();
+  return db.put('expenses', e);
+}
+async function deleteExpense(id) {
+  const db = await getDB();
+  return db.delete('expenses', id);
+}
+async function getExpenseEntry(id) {
+  const db = await getDB();
+  return db.get('expenses', id);
+}
+
+// --- Saved Locations ---
+async function getAllSavedLocations() {
+  const db = await getDB();
+  return db.getAll('savedLocations');
+}
+async function addSavedLocation(loc) {
+  const db = await getDB();
+  // Avoid duplicates by name
+  const all = await db.getAll('savedLocations');
+  if (all.find(l => l.address.toLowerCase() === loc.address.toLowerCase())) return;
+  return db.add('savedLocations', loc);
+}
+async function deleteSavedLocation(id) {
+  const db = await getDB();
+  return db.delete('savedLocations', id);
+}
+
 // --- Settings ---
 function getSetting(key, def) {
   const v = localStorage.getItem('logbook_' + key);
@@ -127,5 +216,8 @@ async function clearAllData() {
   await db.clear('vehicles');
   await db.clear('trips');
   await db.clear('fuel');
+  await db.clear('maintenance');
+  await db.clear('expenses');
+  await db.clear('savedLocations');
   localStorage.clear();
 }
