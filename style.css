@@ -165,3 +165,59 @@ body.light .maint-due-overdue { background: #ffeaea; border-color: #cc4444; }
 .maint-due-soon .maint-due-km { color: #ddaa33; }
 .maint-due-overdue .maint-due-km { color: #cc4444; }
 .maint-due-sub { font-size: 12px; color: #8888aa; }
+
+
+/* ===== STAT CARDS (dashboard) ===== */
+.stat-card { background: #1a1a2e; border-radius: 12px; padding: 16px; cursor: pointer; transition: opacity 0.2s; }
+.stat-card:active { opacity: 0.7; }
+body.light .stat-card { background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #8888aa; margin-bottom: 6px; }
+.stat-value { font-size: 28px; font-weight: 700; color: #7b68ee; margin-bottom: 4px; }
+.stat-sub { font-size: 12px; color: #8888aa; }
+
+/* ===== YEAR BADGE ===== */
+.year-badge { font-size: 13px; background: #7b68ee22; color: #7b68ee; border-radius: 8px; padding: 4px 10px; }
+
+/* ===== SECTION HEADER ===== */
+.section-header { display: flex; align-items: center; justify-content: space-between; margin: 20px 0 12px; }
+.section-header h2 { font-size: 16px; font-weight: 700; }
+
+/* ===== EMPTY STATE ===== */
+.empty-state { text-align: center; padding: 60px 20px; }
+.empty-title { font-size: 18px; font-weight: 700; margin: 12px 0 8px; }
+.empty-sub { font-size: 14px; color: #8888aa; margin-bottom: 20px; }
+
+/* ===== INPUT WITH BUTTON (GPS picker) ===== */
+.input-with-btn { display: flex; gap: 8px; align-items: center; }
+.input-with-btn input { flex: 1; }
+.btn-icon { background: #2a2a4a; border: 1px solid #3a3a5a; border-radius: 10px; color: #7b68ee; font-size: 18px; padding: 10px 12px; cursor: pointer; flex-shrink: 0; transition: background 0.2s; min-width: 44px; display: flex; align-items: center; justify-content: center; }
+.btn-icon:active { background: #3a3a6a; }
+body.light .btn-icon { background: #eeeef8; border-color: #ccc; }
+
+/* ===== LOCATION PICKER MODAL ===== */
+.loc-picker-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #1a1a2e; border-bottom: 1px solid #2a2a4a; flex-shrink: 0; }
+body.light .loc-picker-header { background: #fff; border-color: #e0e0e0; }
+.loc-picker-title { font-size: 16px; font-weight: 700; }
+.loc-picker-status { padding: 8px 16px; font-size: 13px; color: #8888aa; background: #0f0f1a; flex-shrink: 0; }
+body.light .loc-picker-status { background: #f5f5f5; }
+.loc-picker-footer { padding: 8px 16px; font-size: 12px; color: #8888aa; background: #1a1a2e; flex-shrink: 0; text-align: center; }
+body.light .loc-picker-footer { background: #fff; }
+
+/* ===== ABOUT TABLE (settings) ===== */
+.about-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.about-table td { padding: 10px 0; border-bottom: 1px solid #2a2a4a; }
+body.light .about-table td { border-bottom: 1px solid #e0e0e0; }
+.about-table td:first-child { color: #8888aa; width: 30%; }
+.about-table td:last-child { font-weight: 600; }
+.about-table tr:last-child td { border-bottom: none; }
+
+/* ===== FORM ACTIONS ===== */
+.form-actions { display: flex; gap: 10px; margin-top: 8px; padding-bottom: 24px; }
+.form-actions .btn { flex: 1; }
+
+/* ===== SAVE SLOTS ===== */
+.save-slot-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid #2a2a4a; }
+body.light .save-slot-row { border-bottom: 1px solid #e0e0e0; }
+.save-slot-row:last-child { border-bottom: none; }
+.save-slot-label { flex: 1; font-size: 14px; }
+.save-slot-label em { color: #8888aa; font-style: normal; font-size: 13px; }
