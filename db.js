@@ -57,31 +57,25 @@ async function deleteVehicle(id) {
   const db = await getDB();
   return db.delete('vehicles', id);
 }
-async function setActiveVehicle(id) {
-  const db = await getDB();
-  const all = await db.getAll('vehicles');
-  const tx = db.transaction('vehicles', 'readwrite');
-  for (const v of all) {
-    v.active = (v.id === id);
-    tx.store.put(v);
-  }
-  await tx.done;
-}
 async function getActiveVehicle() {
-  const all = await getAllVehicles();
-  return all.find(v => v.active) || all[0] || null;
+  const vehicles = await getAllVehicles();
+  return vehicles.find(v => v.active) || vehicles[0] || null;
+}
+async function setActiveVehicle(id) {
+  const vehicles = await getAllVehicles();
+  for (const v of vehicles) {
+    await updateVehicle({ ...v, active: v.id === id });
+  }
 }
 
 // --- Trips ---
 async function getAllTrips() {
   const db = await getDB();
-  const trips = await db.getAll('trips');
-  return trips.sort((a, b) => b.date.localeCompare(a.date));
+  return db.getAll('trips');
 }
 async function getTripsByVehicle(vehicleId) {
   const db = await getDB();
-  const trips = await db.getAllFromIndex('trips', 'vehicleId', vehicleId);
-  return trips.sort((a, b) => b.date.localeCompare(a.date));
+  return db.getAllFromIndex('trips', 'vehicleId', vehicleId);
 }
 async function addTrip(t) {
   const db = await getDB();
@@ -95,21 +89,19 @@ async function deleteTrip(id) {
   const db = await getDB();
   return db.delete('trips', id);
 }
-async function getTrip(id) {
+async function getTripEntry(id) {
   const db = await getDB();
   return db.get('trips', id);
 }
 
 // --- Fuel ---
-async function getAllFuel() {
-  const db = await getDB();
-  const fuel = await db.getAll('fuel');
-  return fuel.sort((a, b) => b.date.localeCompare(a.date));
-}
 async function getFuelByVehicle(vehicleId) {
   const db = await getDB();
-  const fuel = await db.getAllFromIndex('fuel', 'vehicleId', vehicleId);
-  return fuel.sort((a, b) => b.date.localeCompare(a.date));
+  return db.getAllFromIndex('fuel', 'vehicleId', vehicleId);
+}
+async function getAllFuel() {
+  const db = await getDB();
+  return db.getAll('fuel');
 }
 async function addFuel(f) {
   const db = await getDB();
@@ -129,15 +121,9 @@ async function getFuelEntry(id) {
 }
 
 // --- Maintenance ---
-async function getAllMaintenance() {
-  const db = await getDB();
-  const recs = await db.getAll('maintenance');
-  return recs.sort((a, b) => b.date.localeCompare(a.date));
-}
 async function getMaintenanceByVehicle(vehicleId) {
   const db = await getDB();
-  const recs = await db.getAllFromIndex('maintenance', 'vehicleId', vehicleId);
-  return recs.sort((a, b) => b.date.localeCompare(a.date));
+  return db.getAllFromIndex('maintenance', 'vehicleId', vehicleId);
 }
 async function addMaintenance(m) {
   const db = await getDB();
@@ -156,16 +142,10 @@ async function getMaintenanceEntry(id) {
   return db.get('maintenance', id);
 }
 
-// --- General Expenses ---
-async function getAllExpenses() {
-  const db = await getDB();
-  const recs = await db.getAll('expenses');
-  return recs.sort((a, b) => b.date.localeCompare(a.date));
-}
+// --- Expenses ---
 async function getExpensesByVehicle(vehicleId) {
   const db = await getDB();
-  const recs = await db.getAllFromIndex('expenses', 'vehicleId', vehicleId);
-  return recs.sort((a, b) => b.date.localeCompare(a.date));
+  return db.getAllFromIndex('expenses', 'vehicleId', vehicleId);
 }
 async function addExpense(e) {
   const db = await getDB();
@@ -184,33 +164,36 @@ async function getExpenseEntry(id) {
   return db.get('expenses', id);
 }
 
-// --- Saved Locations ---
-async function getAllSavedLocations() {
-  const db = await getDB();
-  return db.getAll('savedLocations');
-}
-async function addSavedLocation(loc) {
-  const db = await getDB();
-  // Avoid duplicates by name
-  const all = await db.getAll('savedLocations');
-  if (all.find(l => l.address.toLowerCase() === loc.address.toLowerCase())) return;
-  return db.add('savedLocations', loc);
-}
-async function deleteSavedLocation(id) {
-  const db = await getDB();
-  return db.delete('savedLocations', id);
-}
-
-// --- Settings ---
+// --- Settings (localStorage) ---
 function getSetting(key, def) {
-  const v = localStorage.getItem('logbook_' + key);
-  return v !== null ? JSON.parse(v) : def;
+  try {
+    const v = localStorage.getItem('logbook_' + key);
+    return v !== null ? JSON.parse(v) : def;
+  } catch(e) { return def; }
 }
-function setSetting(key, value) {
-  localStorage.setItem('logbook_' + key, JSON.stringify(value));
+function setSetting(key, val) {
+  localStorage.setItem('logbook_' + key, JSON.stringify(val));
 }
 
-// --- Clear all data ---
+// --- Years helper ---
+function getYears() {
+  const cur = new Date().getFullYear();
+  const years = [];
+  for (let y = cur; y >= cur - 5; y--) years.push(y);
+  return years;
+}
+
+// --- Date helper ---
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// --- Currency helper ---
+function formatCurrency(n) {
+  return '$' + Number(n || 0).toFixed(2);
+}
+
+// --- Clear All Data (preserves save slots and app settings keys not related to data) ---
 async function clearAllData() {
   const db = await getDB();
   await db.clear('vehicles');
@@ -219,5 +202,6 @@ async function clearAllData() {
   await db.clear('maintenance');
   await db.clear('expenses');
   await db.clear('savedLocations');
-  localStorage.clear();
+  // Only clear app settings keys, NOT save slot keys (logbook_save_slot_*)
+  ['logbook_settings', 'logbook_active_vehicle', 'logbook_darkMode', 'logbook_craRate'].forEach(k => localStorage.removeItem(k));
 }
