@@ -2,8 +2,12 @@
 async function renderVehicles(container) {
   const vehicles = await getAllVehicles();
   const activeV = await getActiveVehicle();
+  const el = typeof container === 'string'
+    ? document.getElementById(container)
+    : (container || document.getElementById('vehicles-container'));
+  if (!el) return;
 
-  container.innerHTML = `
+  el.innerHTML = `
     <div class="settings-section">
       <h2>Vehicles</h2>
       ${vehicles.length === 0 ? '<div class="list-empty" style="padding:20px 0">No vehicles added yet</div>' : ''}
@@ -20,9 +24,11 @@ async function renderVehicles(container) {
             <button class="btn btn-secondary btn-sm" onclick="showVehicleForm(${v.id})">Edit</button>
             <button class="btn btn-danger btn-sm" onclick="confirmDeleteVehicle(${v.id})">Del</button>
           </div>
-        </div>`).join('')}
+        </div>
+      `).join('')}
       <button class="btn btn-primary btn-full mt-16" onclick="showVehicleForm(null)">+ Add Vehicle</button>
-    </div>`;
+    </div>
+  `;
 }
 
 async function setActiveVehicleAndRefresh(id) {
@@ -48,42 +54,51 @@ function showVehicleForm(editId) {
       <div class="modal-actions">
         <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
         <button class="btn btn-primary" onclick="saveVehicle(${editId || 'null'})">Save</button>
-      </div>`;
+      </div>
+    `;
     showModal(html);
   });
 }
 
 async function saveVehicle(editId) {
-  const nick = document.getElementById('v-nick').value.trim();
+  const nickname = document.getElementById('v-nick').value.trim();
   const make = document.getElementById('v-make').value.trim();
   const model = document.getElementById('v-model').value.trim();
   const year = document.getElementById('v-year').value.trim();
   const plate = document.getElementById('v-plate').value.trim();
-  if (!make && !nick) { alert('Please enter at least a make or nickname'); return; }
-  if (editId) {
-    const vehicles = await getAllVehicles();
-    const v = vehicles.find(x => x.id === editId);
-    await updateVehicle({ ...v, nickname: nick, make, model, year, plate });
-  } else {
-    const isFirst = (await getAllVehicles()).length === 0;
-    const id = await addVehicle({ nickname: nick, make, model, year, plate, active: isFirst });
-    if (isFirst) await setActiveVehicle(id);
+
+  if (!make && !nickname) {
+    alert('Please enter at least a make or nickname.');
+    return;
   }
+
+  if (editId) {
+    const existing = await getVehicle(editId);
+    await updateVehicle({ ...existing, nickname, make, model, year, plate });
+  } else {
+    const id = await addVehicle({ nickname, make, model, year, plate, active: false });
+    const vehicles = await getAllVehicles();
+    if (vehicles.length === 1) await setActiveVehicle(id);
+  }
+
   closeModal();
-  renderSettings();
+  // Refresh the current page - if on settings, re-render settings; otherwise re-render current page
+  if (typeof renderSettings === 'function' && document.getElementById('vehicles-container')) {
+    renderSettings();
+  } else {
+    navigate(window._currentPage || 'dashboard');
+  }
 }
 
 async function confirmDeleteVehicle(id) {
-  const vehicles = await getAllVehicles();
-  const v = vehicles.find(x => x.id === id);
-  const name = v ? (v.nickname || v.make + ' ' + v.model) : 'this vehicle';
   const html = `
     <div class="modal-title">Delete Vehicle?</div>
-    <p class="text-muted" style="margin-bottom:20px">Delete "${name}"? Trip and fuel records for this vehicle will remain but will show no vehicle.</p>
+    <p class="text-muted">All trips, fuel, maintenance, and expenses for this vehicle will also be deleted.</p>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
       <button class="btn btn-danger" onclick="doDeleteVehicle(${id})">Delete</button>
-    </div>`;
+    </div>
+  `;
   showModal(html);
 }
 
