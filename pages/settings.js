@@ -1,4 +1,6 @@
 // pages/settings.js
+const APP_VERSION = '2.0.0';
+
 async function renderSettings() {
   const el = document.getElementById('page-content');
   const dark = getSetting('darkMode', true);
@@ -50,11 +52,19 @@ async function renderSettings() {
       <h2>About</h2>
       <div class="setting-row">
         <div class="setting-label">Logbook</div>
-        <span class="text-muted">v1.0</span>
+        <span class="pill" style="background:#7b68ee33;color:#7b68ee;">v${APP_VERSION}</span>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">What's New in v2</div>
+        <span class="text-muted" style="font-size:12px;">GPS tracking, maintenance log, expenses</span>
       </div>
       <div class="setting-row">
         <div class="setting-label">Storage</div>
-        <span class="text-muted">Local (IndexedDB)</span>
+        <span class="pill" style="background:#2a2a4a;color:#aaa;">Local (IndexedDB)</span>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Data Privacy</div>
+        <span class="text-muted" style="font-size:12px;">Stored only on this device</span>
       </div>
     </div>
   `;
@@ -75,11 +85,12 @@ function saveCraRate(val) {
 function confirmClearAll() {
   const html = `
     <div class="modal-title">Clear All Data?</div>
-    <p class="text-muted" style="margin-bottom:20px">This will permanently delete ALL vehicles, trips, and fuel records. This cannot be undone. Consider exporting first.</p>
+    <p class="text-muted">This will permanently delete ALL vehicles, trips, fuel records, maintenance, and expenses. This cannot be undone. Consider exporting first.</p>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
       <button class="btn btn-danger" onclick="doClearAll()">Delete Everything</button>
-    </div>`;
+    </div>
+  `;
   showModal(html);
 }
 
@@ -89,7 +100,6 @@ async function doClearAll() {
   navigate('dashboard');
 }
 
-// Register 'export' page route in app.js router (patched here)
 document.addEventListener('DOMContentLoaded', () => {
   if (typeof pages !== 'undefined') {
     pages['export'] = renderExportPage;

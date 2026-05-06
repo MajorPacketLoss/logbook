@@ -138,3 +138,30 @@ body.light .divider { border-top: 1px solid #e0e0e0; }
 .pill { display: inline-block; font-size: 11px; border-radius: 6px; padding: 2px 8px; margin-right: 4px; }
 .pill-purpose { background: #2a2a4a; color: #aaa; }
 body.light .pill-purpose { background: #e8e8f0; color: #555; }
+
+
+/* ===== GPS TRACKER CARD ===== */
+.gps-tracker-card { background: #1a1a2e; border: 1px solid #7b68ee44; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
+body.light .gps-tracker-card { background: #f0eeff; border-color: #7b68ee66; }
+.gps-tracker-title { font-size: 14px; font-weight: 700; color: #7b68ee; margin-bottom: 8px; }
+.gps-status { font-size: 13px; color: #8888aa; margin-bottom: 10px; min-height: 18px; }
+.gps-status.gps-active { color: #44cc88; font-weight: 600; }
+.gps-status.gps-done { color: #7b68ee; font-weight: 600; }
+.gps-status.gps-error { color: #cc4444; }
+.gps-btn-row { display: flex; gap: 10px; }
+.gps-btn-row .btn { flex: 1; }
+
+/* ===== MAINTENANCE DUE CARD ===== */
+.maint-due-card { border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
+.maint-due-ok { background: #1a2e1a; border: 1px solid #44aa6644; }
+.maint-due-soon { background: #2e2a1a; border: 1px solid #ddaa3344; }
+.maint-due-overdue { background: #2e1a1a; border: 1px solid #cc444488; }
+body.light .maint-due-ok { background: #e8f5e8; border-color: #44aa66; }
+body.light .maint-due-soon { background: #fff8e0; border-color: #ddaa33; }
+body.light .maint-due-overdue { background: #ffeaea; border-color: #cc4444; }
+.maint-due-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #8888aa; margin-bottom: 4px; }
+.maint-due-km { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.maint-due-ok .maint-due-km { color: #44cc88; }
+.maint-due-soon .maint-due-km { color: #ddaa33; }
+.maint-due-overdue .maint-due-km { color: #cc4444; }
+.maint-due-sub { font-size: 12px; color: #8888aa; }

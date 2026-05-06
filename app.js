@@ -1,9 +1,13 @@
-// app.js - Router, nav, and app init
+// app.js - Router, nav, and app init (V2)
 const pages = {
   dashboard: renderDashboard,
   trips: renderTripHistory,
   fuel: renderFuelHistory,
+  logTrip: renderLogTrip,
+  logFuel: renderLogFuel,
   summary: renderSummary,
+  maintenance: renderMaintenance,
+  expenses: renderExpenses,
   settings: renderSettings
 };
 
@@ -58,21 +62,14 @@ function getYears() {
 }
 
 async function init() {
-  // Apply theme
   const dark = getSetting('darkMode', true);
   document.body.className = dark ? 'dark' : 'light';
-
-  // Register service worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/logbook/sw.js').catch(() => {});
   }
-
-  // Setup nav buttons
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => navigate(btn.dataset.page));
   });
-
-  // Load dashboard
   navigate('dashboard');
 }
 
