@@ -16,9 +16,7 @@ async function renderLogFuel(params = {}) {
     </div>
     <div class="form-group">
       <label>Vehicle</label>
-      <select id="fuel-vehicle">
-        ${vehicles.map(v => `<option value="${v.id}" ${(f.vehicleId || (activeV && activeV.id)) === v.id ? 'selected' : ''}>${v.nickname || v.make + ' ' + v.model}</option>`).join('')}
-      </select>
+      <select id="fuel-vehicle">${vehicles.map(v => `<option value="${v.id}" ${(f.vehicleId || (activeV && activeV.id)) === v.id ? 'selected' : ''}>${v.nickname || v.make + ' ' + v.model}</option>`).join('')}</select>
     </div>
     <div class="form-group">
       <label>Date</label>
@@ -26,7 +24,10 @@ async function renderLogFuel(params = {}) {
     </div>
     <div class="form-group">
       <label>Gas Station</label>
-      <input id="fuel-station" value="${f.station || ''}" placeholder="Petro-Canada, Shell, Costco..." />
+      <div class="input-with-btn">
+        <input id="fuel-station" value="${f.station || ''}" placeholder="Petro-Canada, Shell, Costco..." />
+        <button class="btn btn-icon" onclick="openLocationPicker('fuel-station','fuel')" title="Pick from map">&#128205;</button>
+      </div>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -51,8 +52,10 @@ async function renderLogFuel(params = {}) {
       <label>Notes (optional)</label>
       <textarea id="fuel-notes" rows="2" placeholder="Full tank, city driving...">${f.notes || ''}</textarea>
     </div>
-    <button class="btn btn-primary btn-full" onclick="saveFuel(${editId || 'null'})">${isEdit ? 'Update' : 'Save Fill-Up'}</button>
-    <button class="btn btn-secondary btn-full mt-8" onclick="navigate('fuel')">Cancel</button>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="saveFuel(${editId || 'null'})">${isEdit ? 'Update' : 'Save Fill-Up'}</button>
+      <button class="btn btn-secondary" onclick="navigate('fuel')">Cancel</button>
+    </div>
   `;
 }
 
@@ -76,7 +79,14 @@ async function saveFuel(editId) {
   const odometer = document.getElementById('fuel-odo').value;
   const notes = document.getElementById('fuel-notes').value.trim();
   if (!date || !total_cost) { alert('Please fill in at least date and total cost'); return; }
-  const record = { vehicleId, date, station, litres: litres ? Number(litres) : '', total_cost: Number(total_cost), price_per_litre: price_per_litre ? Number(price_per_litre) : '', odometer: odometer ? Number(odometer) : '', notes };
+  const record = {
+    vehicleId, date, station,
+    litres: litres ? Number(litres) : '',
+    total_cost: Number(total_cost),
+    price_per_litre: price_per_litre ? Number(price_per_litre) : '',
+    odometer: odometer ? Number(odometer) : '',
+    notes
+  };
   if (editId) {
     const existing = await getFuelEntry(editId);
     await updateFuel({ ...existing, ...record });
@@ -89,11 +99,12 @@ async function saveFuel(editId) {
 async function confirmDeleteFuel(id) {
   const html = `
     <div class="modal-title">Delete Fuel Entry?</div>
-    <p class="text-muted" style="margin-bottom:20px">This fuel record will be permanently deleted.</p>
+    <p>This fuel record will be permanently deleted.</p>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
       <button class="btn btn-danger" onclick="doDeleteFuel(${id})">Delete</button>
-    </div>`;
+    </div>
+  `;
   showModal(html);
 }
 
