@@ -8,6 +8,7 @@ const pages = {
   summary: renderSummary,
   maintenance: renderMaintenance,
   expenses: renderExpenses,
+  export: renderExportPage,
   settings: renderSettings
 };
 
@@ -15,6 +16,7 @@ let currentPage = 'dashboard';
 
 function navigate(page, params = {}) {
   currentPage = page;
+  window._currentPage = page; // used by vehicles.js context-aware refresh
   document.querySelectorAll('.nav-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.page === page);
   });
@@ -56,21 +58,36 @@ function formatCurrency(n) {
   return '$' + Number(n).toFixed(2);
 }
 
-function getYears() {
-  const y = new Date().getFullYear();
-  return [y, y - 1, y - 2, y - 3];
+function getSetting(key, defaultVal) {
+  try {
+    const v = localStorage.getItem('logbook_' + key);
+    if (v === null) return defaultVal;
+    return JSON.parse(v);
+  } catch(e) { return defaultVal; }
 }
 
-async function init() {
+function setSetting(key, val) {
+  localStorage.setItem('logbook_' + key, JSON.stringify(val));
+}
+
+// Apply saved theme on load
+(function applyTheme() {
   const dark = getSetting('darkMode', true);
-  document.body.className = dark ? 'dark' : 'light';
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/logbook/sw.js').catch(() => {});
-  }
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => navigate(btn.dataset.page));
+  document.body.classList.toggle('dark', dark);
+  document.body.classList.toggle('light', !dark);
+})();
+
+// Service Worker registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/logbook/sw.js').catch(e => console.warn('SW registration failed', e));
   });
-  navigate('dashboard');
 }
 
-document.addEventListener('DOMContentLoaded', init);
+// Bottom nav click handlers
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => navigate(btn.dataset.page));
+});
+
+// Init
+navigate('dashboard');
