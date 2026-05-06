@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Logbook</title>
   <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="theme-color" content="#1a1a2e" id="theme-color-meta" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Logbook" />
@@ -24,6 +24,7 @@
       <button class="nav-btn" data-page="settings">&#9881;<span>Settings</span></button>
     </nav>
   </div>
+
   <script src="https://cdn.jsdelivr.net/npm/idb@7/build/umd.js"></script>
   <script src="db.js"></script>
   <script src="pages/vehicles.js"></script>
@@ -38,5 +39,15 @@
   <script src="pages/exportPage.js"></script>
   <script src="pages/settings.js"></script>
   <script src="app.js"></script>
+
+  <script>
+    function updateThemeColor() {
+      const isDark = document.body.classList.contains('dark');
+      const meta = document.getElementById('theme-color-meta');
+      if (meta) meta.setAttribute('content', isDark ? '#1a1a2e' : '#ffffff');
+    }
+    new MutationObserver(updateThemeColor).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    updateThemeColor();
+  </script>
 </body>
 </html>
