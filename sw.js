@@ -1,4 +1,4 @@
-const CACHE_NAME = 'logbook-v1';
+const CACHE_NAME = 'logbook-v2';
 const ASSETS = [
   '/logbook/',
   '/logbook/index.html',
@@ -15,6 +15,8 @@ const ASSETS = [
   '/logbook/pages/summary.js',
   '/logbook/pages/exportPage.js',
   '/logbook/pages/settings.js',
+  '/logbook/pages/maintenance.js',
+  '/logbook/pages/expenses.js',
   'https://cdn.jsdelivr.net/npm/idb@7/build/umd.js'
 ];
 
