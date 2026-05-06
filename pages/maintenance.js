@@ -46,14 +46,19 @@ async function renderMaintenance(params = {}) {
       </div>
       <div class="form-group">
         <label>Shop / Location (optional)</label>
-        <input id="maint-shop" value="${m.shop || ''}" placeholder="Mr. Lube - Yonge St" />
+        <div class="input-with-btn">
+          <input id="maint-shop" value="${m.shop || ''}" placeholder="Mr. Lube - Yonge St" />
+          <button class="btn btn-icon" onclick="openLocationPicker('maint-shop','service')" title="Pick from map">&#128205;</button>
+        </div>
       </div>
       <div class="form-group">
         <label>Notes (optional)</label>
         <textarea id="maint-notes" rows="2" placeholder="Parts replaced, warranty info, etc.">${m.notes || ''}</textarea>
       </div>
-      <button class="btn btn-primary btn-full" onclick="saveMaintenance(${editId || 'null'})">${isEdit ? 'Update Record' : 'Save Record'}</button>
-      <button class="btn btn-secondary btn-full" onclick="renderMaintenance()">Cancel</button>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="saveMaintenance(${editId || 'null'})">${isEdit ? 'Update Record' : 'Save Record'}</button>
+        <button class="btn btn-secondary" onclick="renderMaintenance()">Cancel</button>
+      </div>
     `;
     return;
   }
@@ -64,11 +69,9 @@ async function renderMaintenance(params = {}) {
   // Calculate next service due info
   let nextServiceHtml = '';
   if (recs.length > 0) {
-    // Find the most recent record with a next_due_km set
     const withDue = recs.filter(r => r.next_due_km && r.odometer);
     if (withDue.length > 0) {
       const latest = withDue[0];
-      // Get current estimated odometer from most recent trip
       let trips = activeV ? await getTripsByVehicle(activeV.id) : [];
       let estOdo = latest.odometer;
       for (const t of trips) {
@@ -94,11 +97,17 @@ async function renderMaintenance(params = {}) {
       <button class="btn btn-primary btn-sm" onclick="renderMaintenance({showForm:true})">+ Add</button>
     </div>
     ${nextServiceHtml}
-    ${vehicles.length > 1 ? `<div class="form-group"><select id="maint-vehicle-filter" onchange="switchMaintVehicle(this.value)">${vehicles.map(v => `<option value="${v.id}" ${activeV && v.id === activeV.id ? 'selected' : ''}>${v.nickname || v.make + ' ' + v.model}</option>`).join('')}</select></div>` : ''}
-    ${recs.length === 0 ? `<div class="list-empty">No service records yet<br><span class="text-muted">Track oil changes, tires, repairs and more</span></div>` : `
-      <div class="card" style="padding:10px 16px;margin-bottom:12px;">
-        <span class="text-muted">Total spent on maintenance</span>
-        <span style="float:right;font-weight:700;color:#7b68ee;">${formatCurrency(totalCost)}</span>
+    ${vehicles.length > 1 ? `
+      <div class="form-group">
+        <select id="maint-vehicle-filter" onchange="switchMaintVehicle(this.value)">${vehicles.map(v => `<option value="${v.id}" ${activeV && v.id === activeV.id ? 'selected' : ''}>${v.nickname || v.make + ' ' + v.model}</option>`).join('')}</select>
+      </div>
+    ` : ''}
+    ${recs.length === 0 ? `
+      <div class="list-empty">No service records yet<br><small>Track oil changes, tires, repairs and more</small></div>
+    ` : `
+      <div class="summary-row">
+        <span class="label">Total spent on maintenance</span>
+        <span class="value highlight-value">${formatCurrency(totalCost)}</span>
       </div>
       ${recs.map(r => `
         <div class="trip-row" onclick="renderMaintenance({editId:${r.id}})">
@@ -107,7 +116,7 @@ async function renderMaintenance(params = {}) {
             <div class="row-sub">${r.shop || ''} ${r.odometer ? '&bull; ' + r.odometer.toLocaleString() + ' km' : ''}</div>
           </div>
           <div class="row-right">
-            <div class="row-value">${r.cost ? formatCurrency(r.cost) : '—'}</div>
+            <div class="row-value">${r.cost ? formatCurrency(r.cost) : '&mdash;'}</div>
             <div class="row-date">${formatDate(r.date)}</div>
           </div>
         </div>
@@ -130,9 +139,7 @@ async function saveMaintenance(editId) {
   const cost = document.getElementById('maint-cost').value;
   const shop = document.getElementById('maint-shop').value.trim();
   const notes = document.getElementById('maint-notes').value.trim();
-
   if (!date || !type) { alert('Please fill in date and service type'); return; }
-
   const record = {
     vehicleId, date, type,
     odometer: odometer ? Number(odometer) : '',
@@ -140,7 +147,6 @@ async function saveMaintenance(editId) {
     cost: cost ? Number(cost) : '',
     shop, notes
   };
-
   if (editId) {
     const existing = await getMaintenanceEntry(editId);
     await updateMaintenance({ ...existing, ...record });
@@ -153,7 +159,7 @@ async function saveMaintenance(editId) {
 async function confirmDeleteMaint(id) {
   const html = `
     <div class="modal-title">Delete Record?</div>
-    <p class="text-muted">This service record will be permanently deleted.</p>
+    <p>This service record will be permanently deleted.</p>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
       <button class="btn btn-danger" onclick="doDeleteMaint(${id})">Delete</button>
