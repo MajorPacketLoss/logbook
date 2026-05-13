@@ -1,5 +1,5 @@
 // pages/settings.js
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '1.0.0';
 const NUM_SAVE_SLOTS = 3;
 
 // ---- Save Slot helpers ----
@@ -65,7 +65,7 @@ async function renderSettings() {
 
     <div class="settings-section">
       <h2>&#127918; Save Slots</h2>
-      <p class="setting-sub" style="margin-bottom:12px">Save and restore complete snapshots of all your data &mdash; like game saves. Useful for testing or keeping backups on-device.</p>
+      <p class="setting-sub" style="margin-bottom:12px">Save and restore complete snapshots of all your data. Useful for testing or keeping backups on-device.</p>
       ${slotsHtml}
       <div style="margin-top:12px">
         <button class="btn btn-secondary btn-full" onclick="loadTestData()">&#129514; Load Test Data</button>
@@ -97,14 +97,10 @@ async function renderSettings() {
     <div class="settings-section">
       <h2>About</h2>
       <div class="setting-row"><span class="setting-label">App</span><span>Logbook v${APP_VERSION}</span></div>
-      <div class="setting-row"><span class="setting-label">Platform</span><span>PWA (GitHub Pages)</span></div>
-      <div class="setting-row"><span class="setting-label">Storage</span><span>Local &mdash; IndexedDB &amp; localStorage</span></div>
+      <div class="setting-row"><span class="setting-label">Platform</span><span>Progressive Web Application hosted on GitHub Pages</span></div>
+      <div class="setting-row"><span class="setting-label">Storage</span><span>IndexedDB &amp; localStorage</span></div>
       <div class="setting-row"><span class="setting-label">Privacy</span><span>All data stays on this device</span></div>
       <div class="setting-row"><span class="setting-label">Purpose</span><span>CRA mileage logbook (Ontario)</span></div>
-      <div class="setting-row">
-        <span class="setting-label">Source</span>
-        <a href="https://github.com/MajorPacketLoss/logbook" target="_blank" style="color:#7c83f7">GitHub &#8599;</a>
-      </div>
       <div class="setting-row">
         <span class="setting-label">Update</span>
         <button class="btn btn-secondary btn-sm" onclick="checkForUpdate()">Check for Update</button>
@@ -196,7 +192,7 @@ async function loadTestData() {
   if (!confirmed) return;
   try {
     const db = await getDB();
-    const carId = await db.add('vehicles', { nickname: 'Test Car', make: 'Toyota', model: 'Corolla', year: '2022', plate: 'TEST 123', active: true });
+    const carId = await db.add('vehicles', { nickname: 'Test Car', make: 'Ford', model: 'Taurus', year: '2013', plate: 'TEST 123', active: true });
     const truckId = await db.add('vehicles', { nickname: 'Work Truck', make: 'Ford', model: 'F-150', year: '2021', plate: 'WORK 456', active: false });
     const year = new Date().getFullYear();
     const trips = [
@@ -241,7 +237,7 @@ async function checkForUpdate() {
       if (statusEl) statusEl.textContent = 'Could not determine version.';
     }
   } catch(e) {
-    if (statusEl) statusEl.textContent = 'Check failed - are you offline?';
+    if (statusEl) statusEl.textContent = 'Check failed... are you offline?';
   }
 }
 

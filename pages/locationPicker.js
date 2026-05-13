@@ -8,14 +8,23 @@ let _pickerMap = null;
 let _pickerLayerGroup = null;
 
 // POI categories to fetch from Overpass
-const POI_OVERPASS_QUERY_PARTS = [
-  'node["amenity"="fuel"]',          // Gas stations
-  'node["amenity"="charging_station"]', // EV chargers
-  'node["shop"="car_repair"]',        // Auto shops
-  'node["amenity"="car_repair"]',     // Car repair
-  'node["shop"="tyres"]',             // Tire shops
-  'node["amenity"="car_wash"]',       // Car washes
-  'node["shop"="car"]',               // Car dealerships
+const POI_OVERPASS_BY_MODE = {
+  fuel: [
+    'node["amenity"="fuel"]',
+    'node["amenity"="charging_station"]'
+  ],
+  service: [
+    'node["shop"="car_repair"]',
+    'node["amenity"="car_repair"]',
+    'node["shop"="tyres"]',
+    'node["amenity"="car_wash"]',
+    'node["shop"="car"]'
+  ]
+};
+
+POI_OVERPASS_BY_MODE.any = [
+  ...POI_OVERPASS_BY_MODE.fuel,
+  ...POI_OVERPASS_BY_MODE.service
 ];
 
 const POI_ICONS = {
@@ -26,6 +35,11 @@ const POI_ICONS = {
   'shop=tyres':               { emoji: '🛞', color: '#95a5a6' },
   'amenity=car_wash':         { emoji: '🚿', color: '#3498db' },
   'shop=car':                 { emoji: '🚗', color: '#9b59b6' },
+};
+
+const POI_KEYS_BY_MODE = {
+  fuel: ['amenity=fuel', 'amenity=charging_station'],
+  service: ['shop=car_repair', 'amenity=car_repair', 'shop=tyres', 'amenity=car_wash', 'shop=car']
 };
 
 function getPoiKey(tags) {
@@ -52,8 +66,47 @@ function makeLeafletIcon(emoji, color) {
   });
 }
 
-async function fetchNearbyPOIs(lat, lon, radiusM = 1500) {
-  const parts = POI_OVERPASS_QUERY_PARTS.map(q => `${q}(around:${radiusM},${lat},${lon});`).join('');
+function normalizeMode(mode) {
+  return mode === 'fuel' || mode === 'service' ? mode : 'any';
+}
+
+function getOverpassParts(mode) {
+  const key = normalizeMode(mode);
+  return POI_OVERPASS_BY_MODE[key] || POI_OVERPASS_BY_MODE.any;
+}
+
+function isAllowedPoiKey(mode, key) {
+  const norm = normalizeMode(mode);
+  if (norm === 'any') return true;
+  return POI_KEYS_BY_MODE[norm].includes(key);
+}
+
+function createPoiPopup(targetInputId, name, addr, lat, lon) {
+  const wrap = document.createElement('div');
+  const title = document.createElement('strong');
+  title.textContent = name;
+  wrap.appendChild(title);
+  if (addr) {
+    wrap.appendChild(document.createElement('br'));
+    wrap.appendChild(document.createTextNode(addr));
+  }
+  wrap.appendChild(document.createElement('br'));
+  const btn = document.createElement('button');
+  btn.textContent = '✓ Select';
+  btn.style.marginTop = '6px';
+  btn.style.padding = '4px 10px';
+  btn.style.background = '#6c63ff';
+  btn.style.color = '#fff';
+  btn.style.border = 'none';
+  btn.style.borderRadius = '6px';
+  btn.style.cursor = 'pointer';
+  btn.addEventListener('click', () => _selectPlace(targetInputId, name, lat, lon));
+  wrap.appendChild(btn);
+  return wrap;
+}
+
+async function fetchNearbyPOIs(lat, lon, radiusM = 1500, mode = 'any') {
+  const parts = getOverpassParts(mode).map(q => `${q}(around:${radiusM},${lat},${lon});`).join('');
   const query = `[out:json][timeout:15];(${parts});out body;`;
   const url = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query);
   try {
@@ -115,6 +168,13 @@ async function _initPickerMap(targetInputId, mode) {
   const mapEl = document.getElementById('loc-picker-map');
   if (!mapEl) return;
 
+  if (typeof L === 'undefined') {
+    _setPickerStatus('Map library failed to load. Please refresh.', true);
+    return;
+  }
+
+  const normalizedMode = normalizeMode(mode);
+
   // Default to Toronto if geolocation fails
   let lat = 43.6532, lon = -79.3832;
 
@@ -169,12 +229,13 @@ async function _initPickerMap(targetInputId, mode) {
 
   // Fetch and display nearby POIs
   _setPickerStatus('Loading nearby places…');
-  const pois = await fetchNearbyPOIs(lat, lon);
+  const pois = await fetchNearbyPOIs(lat, lon, 1500, normalizedMode);
   let count = 0;
   for (const poi of pois) {
     const tags = poi.tags || {};
     const key = getPoiKey(tags);
     if (!key) continue;
+    if (!isAllowedPoiKey(normalizedMode, key)) continue;
     const info = POI_ICONS[key];
     if (!info) continue;
     const name = tags.name || tags.brand || key.split('=')[1];
@@ -182,7 +243,7 @@ async function _initPickerMap(targetInputId, mode) {
     const icon = makeLeafletIcon(info.emoji, info.color);
     const marker = L.marker([poi.lat, poi.lon], { icon })
       .addTo(_pickerLayerGroup)
-      .bindPopup(`<strong>${name}</strong>${addr ? '<br>' + addr : ''}<br><button onclick="window._pickLocation('${targetInputId}','${name.replace(/'/g,'\\'')}',${poi.lat},${poi.lon})" style="margin-top:6px;padding:4px 10px;background:#6c63ff;color:#fff;border:none;border-radius:6px;cursor:pointer;">✓ Select</button>`);
+      .bindPopup(createPoiPopup(targetInputId, name, addr, poi.lat, poi.lon));
     count++;
   }
 
@@ -193,10 +254,8 @@ async function _initPickerMap(targetInputId, mode) {
   }
 }
 
-// Exposed globally so inline onclick in popup can call it
-window._pickLocation = function(targetInputId, name, lat, lon) {
-  _selectPlace(targetInputId, name, lat, lon);
-};
+// Exposed globally for inline onclick usage elsewhere
+window.openLocationPicker = openLocationPicker;
 
 function _selectPlace(targetInputId, name, lat, lon) {
   const input = document.getElementById(targetInputId);
