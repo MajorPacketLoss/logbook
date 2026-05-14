@@ -1,5 +1,5 @@
 // pages/settings.js
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '2.0.0';
 const NUM_SAVE_SLOTS = 3;
 
 // ---- Save Slot helpers ----

@@ -6,19 +6,25 @@
 
 let _pickerMap = null;
 let _pickerLayerGroup = null;
+let _pickerPoiLayer = null;
+let _pickerCustomLayer = null;
+let _pickerTargetInputId = null;
+let _pickerFetchTimer = null;
+let _pickerFetchController = null;
+const POI_FETCH_DEBOUNCE_MS = 600;
 
 // POI categories to fetch from Overpass
 const POI_OVERPASS_BY_MODE = {
   fuel: [
-    'node["amenity"="fuel"]',
-    'node["amenity"="charging_station"]'
+    'nwr["amenity"="fuel"]',
+    'nwr["amenity"="charging_station"]'
   ],
   service: [
-    'node["shop"="car_repair"]',
-    'node["amenity"="car_repair"]',
-    'node["shop"="tyres"]',
-    'node["amenity"="car_wash"]',
-    'node["shop"="car"]'
+    'nwr["shop"="car_repair"]',
+    'nwr["amenity"="car_repair"]',
+    'nwr["shop"="tyres"]',
+    'nwr["amenity"="car_wash"]',
+    'nwr["shop"="car"]'
   ]
 };
 
@@ -105,17 +111,81 @@ function createPoiPopup(targetInputId, name, addr, lat, lon) {
   return wrap;
 }
 
-async function fetchNearbyPOIs(lat, lon, radiusM = 1500, mode = 'any') {
-  const parts = getOverpassParts(mode).map(q => `${q}(around:${radiusM},${lat},${lon});`).join('');
-  const query = `[out:json][timeout:15];(${parts});out body;`;
+async function fetchPoisInBounds(south, west, north, east, mode = 'any', signal) {
+  const parts = getOverpassParts(mode).map(q => `${q}(${south},${west},${north},${east});`).join('');
+  const query = `[out:json][timeout:25];(${parts});out center;`;
   const url = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query);
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal });
     const data = await res.json();
     return data.elements || [];
   } catch(e) {
-    console.warn('Overpass fetch failed:', e);
+    if (e.name !== 'AbortError') {
+      console.warn('Overpass fetch failed:', e);
+    }
     return [];
+  }
+}
+
+function _setCustomLocationMarker(targetInputId, name, addr, lat, lon) {
+  if (!_pickerCustomLayer) return;
+  _pickerCustomLayer.clearLayers();
+  const icon = makeLeafletIcon('📌', '#f39c12');
+  L.marker([lat, lon], { icon })
+    .addTo(_pickerCustomLayer)
+    .bindPopup(createPoiPopup(targetInputId, name, addr, lat, lon))
+    .openPopup();
+
+  _setPickerStatus('Custom location ready — tap Select in the popup.');
+}
+
+function _schedulePoiReload(mode) {
+  if (_pickerFetchTimer) clearTimeout(_pickerFetchTimer);
+  _pickerFetchTimer = setTimeout(() => {
+    _loadPoisForMap(mode);
+  }, POI_FETCH_DEBOUNCE_MS);
+}
+
+async function _loadPoisForMap(mode) {
+  if (!_pickerMap || !_pickerPoiLayer) return;
+  const bounds = _pickerMap.getBounds();
+  const south = bounds.getSouth();
+  const west = bounds.getWest();
+  const north = bounds.getNorth();
+  const east = bounds.getEast();
+
+  if (_pickerFetchController) _pickerFetchController.abort();
+  _pickerFetchController = new AbortController();
+
+  _setPickerStatus('Loading places in view…');
+  const pois = await fetchPoisInBounds(south, west, north, east, mode, _pickerFetchController.signal);
+  if (_pickerFetchController.signal.aborted) return;
+
+  _pickerPoiLayer.clearLayers();
+  let count = 0;
+  for (const poi of pois) {
+    const tags = poi.tags || {};
+    const key = getPoiKey(tags);
+    if (!key) continue;
+    if (!isAllowedPoiKey(mode, key)) continue;
+    const info = POI_ICONS[key];
+    if (!info) continue;
+    const lat = poi.lat ?? poi.center?.lat;
+    const lon = poi.lon ?? poi.center?.lon;
+    if (lat == null || lon == null) continue;
+    const name = tags.name || tags.brand || key.split('=')[1];
+    const addr = [tags['addr:housenumber'], tags['addr:street']].filter(Boolean).join(' ');
+    const icon = makeLeafletIcon(info.emoji, info.color);
+    L.marker([lat, lon], { icon })
+      .addTo(_pickerPoiLayer)
+      .bindPopup(createPoiPopup(_pickerTargetInputId || '', name, addr, lat, lon));
+    count++;
+  }
+
+  if (count > 0) {
+    _setPickerStatus(`Found ${count} places in view — pan or zoom to load more.`);
+  } else {
+    _setPickerStatus('No places found in this area. Pan/zoom to search elsewhere or tap map for custom location.');
   }
 }
 
@@ -123,6 +193,7 @@ async function fetchNearbyPOIs(lat, lon, radiusM = 1500, mode = 'any') {
 // targetInputId: the input element to populate with the selected name
 // mode: 'fuel' | 'service' | 'any'
 function openLocationPicker(targetInputId, mode = 'any') {
+  _pickerTargetInputId = targetInputId;
   // Build modal HTML (map container + status bar)
   const html = `
     <div class="loc-picker-header">
@@ -132,7 +203,7 @@ function openLocationPicker(targetInputId, mode = 'any') {
     <div id="loc-picker-status" class="loc-picker-status">Getting your location…</div>
     <div id="loc-picker-map" style="width:100%;height:calc(100vh - 120px);min-height:300px;"></div>
     <div class="loc-picker-footer">
-      <small>Tap a marker to select a place, or tap the map to enter a custom point.</small>
+      <div class="loc-picker-hint">Tap a marker to select a place, or tap the map to pick a custom point.</div>
     </div>
   `;
 
@@ -152,7 +223,14 @@ function closeLocationPicker() {
     _pickerMap.remove();
     _pickerMap = null;
     _pickerLayerGroup = null;
+    _pickerPoiLayer = null;
+    _pickerCustomLayer = null;
   }
+  _pickerTargetInputId = null;
+  if (_pickerFetchTimer) clearTimeout(_pickerFetchTimer);
+  _pickerFetchTimer = null;
+  if (_pickerFetchController) _pickerFetchController.abort();
+  _pickerFetchController = null;
   closeModal();
 }
 
@@ -202,6 +280,8 @@ async function _initPickerMap(targetInputId, mode) {
   }).addTo(_pickerMap);
 
   _pickerLayerGroup = L.layerGroup().addTo(_pickerMap);
+  _pickerPoiLayer = L.layerGroup().addTo(_pickerMap);
+  _pickerCustomLayer = L.layerGroup().addTo(_pickerMap);
 
   // User location marker (blue dot)
   const userIcon = makeLeafletIcon('📍', '#1a73e8');
@@ -220,38 +300,18 @@ async function _initPickerMap(targetInputId, mode) {
         headers: { 'Accept-Language': 'en' }
       });
       const data = await r.json();
-      const name = data.name || data.display_name.split(',')[0];
-      _selectPlace(targetInputId, name, clat, clng);
+      const displayName = data.display_name || '';
+      const name = data.name || (displayName ? displayName.split(',')[0] : `${clat.toFixed(5)}, ${clng.toFixed(5)}`);
+      _setCustomLocationMarker(targetInputId, name, displayName, clat, clng);
     } catch(e) {
-      _selectPlace(targetInputId, `${clat.toFixed(5)}, ${clng.toFixed(5)}`, clat, clng);
+      _setCustomLocationMarker(targetInputId, `${clat.toFixed(5)}, ${clng.toFixed(5)}`, '', clat, clng);
     }
   });
 
-  // Fetch and display nearby POIs
-  _setPickerStatus('Loading nearby places…');
-  const pois = await fetchNearbyPOIs(lat, lon, 1500, normalizedMode);
-  let count = 0;
-  for (const poi of pois) {
-    const tags = poi.tags || {};
-    const key = getPoiKey(tags);
-    if (!key) continue;
-    if (!isAllowedPoiKey(normalizedMode, key)) continue;
-    const info = POI_ICONS[key];
-    if (!info) continue;
-    const name = tags.name || tags.brand || key.split('=')[1];
-    const addr = [tags['addr:housenumber'], tags['addr:street']].filter(Boolean).join(' ');
-    const icon = makeLeafletIcon(info.emoji, info.color);
-    const marker = L.marker([poi.lat, poi.lon], { icon })
-      .addTo(_pickerLayerGroup)
-      .bindPopup(createPoiPopup(targetInputId, name, addr, poi.lat, poi.lon));
-    count++;
-  }
+  _pickerMap.on('moveend', () => _schedulePoiReload(normalizedMode));
 
-  if (count > 0) {
-    _setPickerStatus(`Found ${count} nearby places — tap a marker to select.`);
-  } else {
-    _setPickerStatus('No nearby places found in database. Tap anywhere on the map to pick a custom location.');
-  }
+  // Fetch and display nearby POIs
+  _loadPoisForMap(normalizedMode);
 }
 
 // Exposed globally for inline onclick usage elsewhere
