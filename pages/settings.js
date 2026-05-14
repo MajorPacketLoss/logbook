@@ -100,7 +100,7 @@ async function renderSettings() {
       <div class="setting-row"><span class="setting-label">Platform</span><span>Progressive Web Application hosted on GitHub Pages</span></div>
       <div class="setting-row"><span class="setting-label">Storage</span><span>IndexedDB &amp; localStorage</span></div>
       <div class="setting-row"><span class="setting-label">Privacy</span><span>All data stays on this device</span></div>
-      <div class="setting-row"><span class="setting-label">Purpose</span><span>CRA mileage logbook (Ontario)</span></div>
+      <div class="setting-row"><span class="setting-label">Purpose</span><span>CRA mileage logbook</span></div>
       <div class="setting-row">
         <span class="setting-label">Update</span>
         <button class="btn btn-secondary btn-sm" onclick="checkForUpdate()">Check for Update</button>

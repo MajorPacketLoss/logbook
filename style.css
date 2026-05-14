@@ -181,6 +181,8 @@ body.light .stat-card { background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 /* ===== SECTION HEADER ===== */
 .section-header { display: flex; align-items: center; justify-content: space-between; margin: 20px 0 12px; }
 .section-header h2 { font-size: 16px; font-weight: 700; }
+.section-header .btn { background: #2a2a4a; color: #e0e0f0; }
+body.light .section-header .btn { background: #e0e0f0; color: #1a1a2e; }
 
 /* ===== EMPTY STATE ===== */
 .empty-state { text-align: center; padding: 60px 20px; }
