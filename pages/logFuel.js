@@ -41,7 +41,7 @@ async function renderLogFuel(params = {}) {
     </div>
     <div class="form-group">
       <label>Price per Litre (&#162;/L)</label>
-      <input type="number" id="fuel-ppl" value="${f.price_per_litre || ''}" placeholder="162.9" step="0.1" readonly />
+      <input type="number" id="fuel-ppl" value="${f.price_per_litre || ''}" placeholder="162.9" step="0.1" oninput="calcFuel()" />
       <div class="auto-calc" id="ppl-hint"></div>
     </div>
     <div class="form-group">
@@ -59,14 +59,69 @@ async function renderLogFuel(params = {}) {
   `;
 }
 
+function _formatFuelValue(value, digits) {
+  return String(Number(value.toFixed(digits)));
+}
+
+function _setPplHint(text) {
+  const hint = document.getElementById('ppl-hint');
+  if (hint) hint.textContent = text;
+}
+
 function calcFuel() {
-  const L = parseFloat(document.getElementById('fuel-litres').value);
-  const C = parseFloat(document.getElementById('fuel-cost').value);
-  if (!isNaN(L) && !isNaN(C) && L > 0) {
-    const ppl = (C / L * 100).toFixed(1);
-    document.getElementById('fuel-ppl').value = ppl;
-    document.getElementById('ppl-hint').textContent = 'Auto-calculated';
+  const litresEl = document.getElementById('fuel-litres');
+  const costEl = document.getElementById('fuel-cost');
+  const pplEl = document.getElementById('fuel-ppl');
+
+  const L = parseFloat(litresEl.value);
+  const C = parseFloat(costEl.value);
+  const P = parseFloat(pplEl.value);
+
+  const hasL = !isNaN(L) && L > 0;
+  const hasC = !isNaN(C) && C > 0;
+  const hasP = !isNaN(P) && P > 0;
+
+  const litresEmpty = litresEl.value.trim() === '';
+  const costEmpty = costEl.value.trim() === '';
+  const pplEmpty = pplEl.value.trim() === '';
+
+  const calcPpl = () => {
+    if (!hasL || !hasC) return;
+    const ppl = (C / L * 100);
+    pplEl.value = _formatFuelValue(ppl, 1);
+  };
+
+  const calcCost = () => {
+    if (!hasL || !hasP) return;
+    const cost = (L * P) / 100;
+    costEl.value = _formatFuelValue(cost, 2);
+  };
+
+  const calcLitres = () => {
+    if (!hasC || !hasP) return;
+    const litres = (C * 100) / P;
+    litresEl.value = _formatFuelValue(litres, 2);
+  };
+
+  if (hasL && hasC && pplEmpty) {
+    calcPpl();
+    _setPplHint('Auto-calculated price per litre');
+    return;
   }
+
+  if (hasL && hasP && costEmpty) {
+    calcCost();
+    _setPplHint('Auto-calculated total cost');
+    return;
+  }
+
+  if (hasC && hasP && litresEmpty) {
+    calcLitres();
+    _setPplHint('Auto-calculated litres');
+    return;
+  }
+
+  _setPplHint('');
 }
 
 async function saveFuel(editId) {

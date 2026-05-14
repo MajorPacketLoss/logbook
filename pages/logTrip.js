@@ -8,6 +8,7 @@ let _gpsStartTime = null;
 let _gpsStartCoords = null;
 let _gpsTotalMeters = 0;
 let _gpsLastPoint = null;
+let _tripCalcLastEdited = null;
 
 function haversineMeters(lat1, lon1, lat2, lon2) {
   const R = 6371000;
@@ -92,12 +93,62 @@ async function stopGPSTracking() {
   }
 }
 
+function _formatOdometer(value) {
+  return String(Number(value.toFixed(1)));
+}
+
+function _setTripCalcHint(text) {
+  const hint = document.getElementById('trip-calc-hint');
+  if (hint) hint.textContent = text;
+}
+
+function tripCalcInput(source) {
+  _tripCalcLastEdited = source;
+  calcKm();
+}
+
 function calcKm() {
-  const s = parseFloat(document.getElementById('trip-odo-start').value);
-  const e = parseFloat(document.getElementById('trip-odo-end').value);
-  if (!isNaN(s) && !isNaN(e) && e > s) {
-    document.getElementById('trip-km').value = (e - s).toFixed(1);
+  const startEl = document.getElementById('trip-odo-start');
+  const endEl = document.getElementById('trip-odo-end');
+  const kmEl = document.getElementById('trip-km');
+
+  const s = parseFloat(startEl.value);
+  const e = parseFloat(endEl.value);
+  const k = parseFloat(kmEl.value);
+
+  const sHas = !isNaN(s) && s >= 0;
+  const eHas = !isNaN(e) && e >= 0;
+  const kHas = !isNaN(k) && k >= 0;
+
+  const sEmpty = startEl.value.trim() === '';
+  const eEmpty = endEl.value.trim() === '';
+  const kEmpty = kmEl.value.trim() === '';
+
+  if (sHas && eHas && kEmpty && e > s) {
+    kmEl.value = (e - s).toFixed(1);
+    _setTripCalcHint('Auto-calculated distance');
+    return;
   }
+
+  if (sHas && kHas && eEmpty && k >= 0) {
+    const end = s + k;
+    if (end >= s) {
+      endEl.value = _formatOdometer(end);
+      _setTripCalcHint('Auto-calculated odometer end');
+      return;
+    }
+  }
+
+  if (eHas && kHas && sEmpty && k >= 0) {
+    const start = e - k;
+    if (start >= 0 && start <= e) {
+      startEl.value = _formatOdometer(start);
+      _setTripCalcHint('Auto-calculated odometer start');
+      return;
+    }
+  }
+
+  if (_tripCalcLastEdited) _setTripCalcHint('');
 }
 
 async function renderLogTrip(params = {}) {
@@ -109,6 +160,7 @@ async function renderLogTrip(params = {}) {
   if (editId) existing = await getTrip(editId);
   const t = existing || {};
   const isEdit = !!existing;
+  _tripCalcLastEdited = null;
 
   // Load saved locations for datalist
   let savedLocs = [];
@@ -173,16 +225,17 @@ async function renderLogTrip(params = {}) {
     <div class="form-row">
       <div class="form-group">
         <label>Odometer Start (km)</label>
-        <input type="number" id="trip-odo-start" value="${t.odometer_start || ''}" placeholder="e.g. 50000" oninput="calcKm()" />
+        <input type="number" id="trip-odo-start" value="${t.odometer_start || ''}" placeholder="e.g. 50000" oninput="tripCalcInput('start')" />
       </div>
       <div class="form-group">
         <label>Odometer End (km)</label>
-        <input type="number" id="trip-odo-end" value="${t.odometer_end || ''}" placeholder="e.g. 50025" oninput="calcKm()" />
+        <input type="number" id="trip-odo-end" value="${t.odometer_end || ''}" placeholder="e.g. 50025" oninput="tripCalcInput('end')" />
       </div>
     </div>
     <div class="form-group">
       <label>Distance Driven (km)</label>
-      <input type="number" id="trip-km" value="${t.km_driven || ''}" placeholder="Enter km or use odometer/GPS above" step="0.1" />
+      <input type="number" id="trip-km" value="${t.km_driven || ''}" placeholder="Enter km or use odometer/GPS above" step="0.1" oninput="tripCalcInput('km')" />
+      <div class="auto-calc" id="trip-calc-hint"></div>
     </div>
     <div class="form-group">
       <label>Notes (optional)</label>
