@@ -203,5 +203,5 @@ async function clearAllData() {
   await db.clear('expenses');
   await db.clear('savedLocations');
   // Only clear app settings keys, NOT save slot keys (logbook_save_slot_*)
-  ['logbook_settings', 'logbook_active_vehicle', 'logbook_darkMode', 'logbook_craRate'].forEach(k => localStorage.removeItem(k));
+  ['logbook_settings', 'logbook_active_vehicle', 'logbook_craRate'].forEach(k => localStorage.removeItem(k));
 }

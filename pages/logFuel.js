@@ -26,7 +26,7 @@ async function renderLogFuel(params = {}) {
       <label>Gas Station</label>
       <div class="input-with-btn">
         <input id="fuel-station" value="${f.station || ''}" placeholder="Petro-Canada, Shell, Costco..." />
-        <button class="btn btn-icon" onclick="openLocationPicker('fuel-station','fuel')" title="Pick from map">&#128205;</button>
+        <button class="btn btn-icon" onclick="openLocationPicker('fuel-station','fuel')" title="Pick from map"><i data-lucide="map-pin-plus"></i></button>
       </div>
     </div>
     <div class="form-row">

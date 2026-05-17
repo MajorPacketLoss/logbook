@@ -1,2 +1,2 @@
-# logbook
-CRA-compliant vehicle logbook PWA for fuel expense tracking
+# RouteLogger
+The convenient vehicle logbook for Canadian business.
