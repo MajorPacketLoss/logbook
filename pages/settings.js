@@ -64,7 +64,7 @@ async function renderSettings() {
     </div>
 
     <div class="settings-section">
-      <h2>&#127918; Save Slots</h2>
+      <h2>Save Slots</h2>
       <p class="setting-sub" style="margin-bottom:12px">Save and restore complete snapshots of all your data. Useful for testing or keeping backups on-device.</p>
       ${slotsHtml}
       <div style="margin-top:12px">
