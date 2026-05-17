@@ -14,6 +14,12 @@ const pages = {
 
 let currentPage = 'dashboard';
 
+function refreshLucideIcons() {
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons();
+  }
+}
+
 function navigate(page, params = {}) {
   currentPage = page;
   window._currentPage = page; // used by vehicles.js context-aware refresh
@@ -23,7 +29,9 @@ function navigate(page, params = {}) {
   const content = document.getElementById('page-content');
   content.scrollTop = 0;
   if (pages[page]) {
-    pages[page](params);
+    Promise.resolve(pages[page](params)).finally(refreshLucideIcons);
+  } else {
+    refreshLucideIcons();
   }
 }
 
@@ -36,6 +44,7 @@ function showModal(html, onReady) {
     if (e.target === overlay) closeModal();
   });
   if (onReady) onReady(overlay.querySelector('.modal'));
+  refreshLucideIcons();
   return overlay;
 }
 
@@ -70,12 +79,45 @@ function setSetting(key, val) {
   localStorage.setItem('logbook_' + key, JSON.stringify(val));
 }
 
-// Apply saved theme on load
-(function applyTheme() {
-  const dark = getSetting('darkMode', true);
-  document.body.classList.toggle('dark', dark);
-  document.body.classList.toggle('light', !dark);
+(function initTheme() {
+  const root = document.documentElement;
+  let theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+
+  function applyTheme(nextTheme) {
+    theme = nextTheme;
+    root.setAttribute('data-theme', theme);
+  }
+
+  function updateToggleIcon() {
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    btn.innerHTML = theme === 'dark'
+      ? '<i data-lucide="sun"></i>'
+      : '<i data-lucide="moon"></i>';
+    refreshLucideIcons();
+  }
+
+  function toggleTheme() {
+    applyTheme(theme === 'dark' ? 'light' : 'dark');
+    updateToggleIcon();
+  }
+
+  window.toggleTheme = toggleTheme;
+  window.getCurrentTheme = () => theme;
+
+  applyTheme(theme);
+  window.addEventListener('load', updateToggleIcon);
 })();
+
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const splash = document.getElementById('splash');
+    if (!splash) return;
+    splash.classList.add('hidden');
+    setTimeout(() => splash.remove(), 400);
+  }, 800);
+  refreshLucideIcons();
+});
 
 // Service Worker registration
 if ('serviceWorker' in navigator) {

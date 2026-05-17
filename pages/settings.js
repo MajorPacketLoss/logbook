@@ -13,7 +13,8 @@ function setSaveSlotMeta(slot, meta) {
 
 async function renderSettings() {
   const el = document.getElementById('page-content');
-  const dark = getSetting('darkMode', true);
+  const dark = (window.getCurrentTheme && window.getCurrentTheme() === 'dark')
+    || document.documentElement.getAttribute('data-theme') === 'dark';
   const craRate = getSetting('craRate', 0.73);
 
   // Build save slot HTML
@@ -41,13 +42,10 @@ async function renderSettings() {
       <h2>Appearance</h2>
       <div class="setting-row">
         <div>
-          <div class="setting-label">Dark Mode</div>
-          <div class="setting-sub">Toggle light/dark theme</div>
+          <div class="setting-label">Theme</div>
+          <div class="setting-sub">Current: ${dark ? 'Dark' : 'Light'}</div>
         </div>
-        <label class="toggle">
-          <input type="checkbox" id="dark-toggle" ${dark ? 'checked' : ''} onchange="toggleDark(this.checked)" />
-          <span class="toggle-slider"></span>
-        </label>
+        <button class="btn btn-secondary btn-sm" onclick="toggleDark()">${dark ? 'Use Light' : 'Use Dark'}</button>
       </div>
     </div>
 
@@ -96,7 +94,7 @@ async function renderSettings() {
 
     <div class="settings-section">
       <h2>About</h2>
-      <div class="setting-row"><span class="setting-label">App</span><span>Logbook v${APP_VERSION}</span></div>
+      <div class="setting-row"><span class="setting-label">App</span><span>RouteLogger v${APP_VERSION}</span></div>
       <div class="setting-row"><span class="setting-label">Platform</span><span>Progressive Web Application hosted on GitHub Pages</span></div>
       <div class="setting-row"><span class="setting-label">Storage</span><span>IndexedDB &amp; localStorage</span></div>
       <div class="setting-row"><span class="setting-label">Privacy</span><span>All data stays on this device</span></div>
@@ -112,10 +110,11 @@ async function renderSettings() {
   renderVehicles();
 }
 
-function toggleDark(val) {
-  setSetting('darkMode', val);
-  document.body.classList.toggle('dark', val);
-  document.body.classList.toggle('light', !val);
+function toggleDark() {
+  if (typeof window.toggleTheme === 'function') {
+    window.toggleTheme();
+    renderSettings();
+  }
 }
 
 function saveCraRate(val) {
@@ -135,7 +134,7 @@ async function saveSaveSlot(slot) {
       fuel: await db.getAll('fuel'),
       maintenance: await db.getAll('maintenance'),
       expenses: await db.getAll('expenses'),
-      settings: { darkMode: getSetting('darkMode', true), craRate: getSetting('craRate', 0.73) }
+      settings: { craRate: getSetting('craRate', 0.73) }
     };
     localStorage.setItem(getSaveSlotKey(slot), JSON.stringify(data));
     setSaveSlotMeta(slot, { name, savedAt: new Date().toLocaleString() });
@@ -167,10 +166,8 @@ async function loadSaveSlot(slot) {
     for (const f of data.fuel) await db.add('fuel', remap(f));
     for (const m of (data.maintenance || [])) await db.add('maintenance', remap(m));
     for (const e of (data.expenses || [])) await db.add('expenses', remap(e));
-    if (data.settings) {
-      setSetting('darkMode', data.settings.darkMode);
+    if (data.settings && data.settings.craRate) {
       setSetting('craRate', data.settings.craRate);
-      toggleDark(data.settings.darkMode);
     }
     alert(`Loaded Slot ${slot}: "${meta.name}"`);
     navigate('dashboard');
@@ -266,13 +263,13 @@ async function exportAllDataJSON() {
       fuel: await db.getAll('fuel'),
       maintenance: await db.getAll('maintenance'),
       expenses: await db.getAll('expenses'),
-      settings: { darkMode: getSetting('darkMode', true), craRate: getSetting('craRate', 0.73) }
+      settings: { craRate: getSetting('craRate', 0.73) }
     };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'logbook-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.download = 'routelogger-backup-' + new Date().toISOString().slice(0, 10) + '.json';
     a.click();
     URL.revokeObjectURL(url);
   } catch(e) { alert('Export failed: ' + e.message); }

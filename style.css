@@ -224,3 +224,259 @@ body.light .save-slot-row { border-bottom: 1px solid #e0e0e0; }
 .save-slot-row:last-child { border-bottom: none; }
 .save-slot-label { flex: 1; font-size: 14px; }
 .save-slot-label em { color: #8888aa; font-style: normal; font-size: 13px; }
+
+/* ===== ROUTELOGGER BRAND THEME ===== */
+:root {
+  --font-body: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --color-bg: #f7f6f2;
+  --color-surface: #fafaf8;
+  --color-surface-2: #f0efe9;
+  --color-surface-offset: #f0efe9;
+  --color-border: #dedad3;
+  --color-text: #1a1f2e;
+  --color-text-muted: #6b6a65;
+  --color-text-faint: #b0afa9;
+  --color-primary: #01696f;
+  --color-primary-hover: #0c4e54;
+  --color-success: #437a22;
+  --color-warning: #b07a00;
+  --color-error: #a12c7b;
+}
+
+html[data-theme="dark"] {
+  --color-bg: #0d1017;
+  --color-surface: #1a1f2e;
+  --color-surface-2: #1f2538;
+  --color-surface-offset: #252b3d;
+  --color-border: #2e3447;
+  --color-text: #edecea;
+  --color-text-muted: #8a8fa0;
+  --color-text-faint: #4a4f60;
+  --color-primary: #4f98a3;
+  --color-primary-hover: #227f8b;
+  --color-success: #6daa45;
+  --color-warning: #e8af34;
+  --color-error: #d163a7;
+}
+
+html, body {
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+#app {
+  max-width: 680px;
+  background: var(--color-bg);
+}
+
+.app-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: max(10px, env(safe-area-inset-top)) 16px 10px;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-logo {
+  width: 32px;
+  height: 32px;
+}
+
+.brand-wordmark {
+  color: var(--color-text);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.brand-wordmark strong {
+  font-weight: 800;
+}
+
+.theme-toggle {
+  min-width: 42px;
+}
+
+#page-content {
+  padding: 16px 16px 0;
+}
+
+#bottom-nav {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  gap: 2px;
+}
+
+.nav-btn {
+  color: var(--color-text-muted);
+  padding-bottom: 24px;
+}
+
+.nav-btn.active {
+  color: var(--color-primary);
+}
+
+.nav-btn span {
+  font-size: 12px;
+}
+
+.nav-btn .nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+[data-lucide] {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.75;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.nav-icon [data-lucide] {
+  width: 24px;
+  height: 24px;
+}
+
+.splash {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  z-index: 9999;
+  transition: opacity 0.4s ease;
+}
+
+.splash.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .light-logo {
+  display: none;
+}
+
+[data-theme="light"] .dark-logo {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .light-logo {
+    display: none;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .dark-logo {
+    display: none;
+  }
+}
+
+.card,
+.trip-row,
+.fuel-row,
+.vehicle-row,
+.stat-card,
+.modal,
+.method-card {
+  background: var(--color-surface);
+}
+
+.gps-tracker-card,
+.input-with-btn .btn-icon,
+.loc-picker-header,
+.loc-picker-footer {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.loc-picker-status {
+  background: var(--color-surface-2);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+}
+
+.btn-primary:hover,
+.btn-primary:focus-visible {
+  background: var(--color-primary-hover);
+}
+
+.btn-secondary {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.btn-danger {
+  background: var(--color-error);
+}
+
+input, select, textarea {
+  background: var(--color-surface-offset);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--color-primary);
+}
+
+select option {
+  background: var(--color-surface);
+}
+
+label,
+.row-sub,
+.row-date,
+.text-muted,
+.card h2,
+.card .sub,
+.summary-row .label,
+.setting-sub,
+.stat-label,
+.stat-sub {
+  color: var(--color-text-muted);
+}
+
+.row-value,
+.highlight-value,
+.stat-value,
+.card .big-number,
+.method-card .method-value {
+  color: var(--color-primary);
+}
+
+.summary-row,
+.setting-row,
+.save-slot-row,
+.about-table td,
+.divider {
+  border-color: var(--color-border);
+}
+
+.pill-purpose {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+
+.btn-block {
+  width: 100%;
+  margin-bottom: 10px;
+}

@@ -48,7 +48,7 @@ async function renderMaintenance(params = {}) {
         <label>Shop / Location (optional)</label>
         <div class="input-with-btn">
           <input id="maint-shop" value="${m.shop || ''}" placeholder="Mr. Lube - Yonge St" />
-          <button class="btn btn-icon" onclick="openLocationPicker('maint-shop','service')" title="Pick from map">&#128205;</button>
+          <button class="btn btn-icon" onclick="openLocationPicker('maint-shop','service')" title="Pick from map"><i data-lucide="map-pin-plus"></i></button>
         </div>
       </div>
       <div class="form-group">
