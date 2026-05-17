@@ -1,4 +1,4 @@
-const CACHE_NAME = 'logbook-v6';
+const CACHE_NAME = 'routelogger-v7';
 const ASSETS = [
   '/logbook/',
   '/logbook/index.html',
@@ -6,6 +6,14 @@ const ASSETS = [
   '/logbook/app.js',
   '/logbook/db.js',
   '/logbook/manifest.json',
+  '/logbook/Assets/Logo/logo-mark.svg',
+  '/logbook/Assets/Logo/logo-full-light.svg',
+  '/logbook/Assets/Logo/logo-full-dark.svg',
+  '/logbook/Assets/Logo/RouteLoggerIcon.svg',
+  '/logbook/Assets/Logo/FullIconLight.svg',
+  '/logbook/Assets/Logo/FullIconDark.svg',
+  '/logbook/Assets/Logo/AppIconLight.svg',
+  '/logbook/Assets/Logo/AppIconDark.svg',
   '/logbook/pages/dashboard.js',
   '/logbook/pages/vehicles.js',
   '/logbook/pages/logTrip.js',

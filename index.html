@@ -3,45 +3,76 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Logbook</title>
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#1a1a2e">
+  <title>RouteLogger</title>
+  <script>
+    document.documentElement.setAttribute(
+      'data-theme',
+      window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    );
+  </script>
+
+  <link rel="manifest" href="./manifest.json" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Logbook">
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="style.css" />
-  <!-- Leaflet for GPS location picker -->
-  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+  <meta name="apple-mobile-web-app-title" content="RouteLogger">
+  <link rel="apple-touch-icon" href="./Assets/Logo/logo-mark.svg">
+
+  <meta name="theme-color" content="#1a1f2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#1a1f2e" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/svg+xml" href="./Assets/Logo/logo-mark.svg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./vendor/leaflet/leaflet.css" />
 </head>
-<body class="dark">
+<body>
+  <div id="splash" class="splash">
+    <img src="./Assets/Logo/logo-full-light.svg" class="splash-logo light-logo" alt="RouteLogger" width="160">
+    <img src="./Assets/Logo/logo-full-dark.svg" class="splash-logo dark-logo" alt="RouteLogger" width="160">
+  </div>
+
   <div id="app">
+    <header class="app-topbar">
+      <div class="brand">
+        <img src="./Assets/Logo/logo-mark.svg" alt="RouteLogger" width="32" height="32" class="nav-logo">
+        <div class="brand-wordmark"><span>Route</span><strong>Logger</strong></div>
+      </div>
+      <button id="theme-toggle" class="btn btn-secondary btn-sm theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+        <i data-lucide="moon"></i>
+      </button>
+    </header>
+
     <div id="page-content"></div>
+
     <nav id="bottom-nav">
-      <button class="nav-btn" data-page="dashboard">&#127968;<span>Home</span></button>
-      <button class="nav-btn" data-page="trips">&#128663;<span>Trips</span></button>
-      <button class="nav-btn" data-page="fuel">&#9981;<span>Fuel</span></button>
-      <button class="nav-btn" data-page="maintenance">&#128295;<span>Service</span></button>
-      <button class="nav-btn" data-page="summary">&#128202;<span>Summary</span></button>
-      <button class="nav-btn" data-page="settings">&#9881;<span>Settings</span></button>
+      <button class="nav-btn" data-page="dashboard"><span class="nav-icon"><i data-lucide="layout-dashboard"></i></span><span>Home</span></button>
+      <button class="nav-btn" data-page="trips"><span class="nav-icon"><i data-lucide="list"></i></span><span>Trips</span></button>
+      <button class="nav-btn" data-page="fuel"><span class="nav-icon"><i data-lucide="fuel"></i></span><span>Fuel</span></button>
+      <button class="nav-btn" data-page="maintenance"><span class="nav-icon"><i data-lucide="wrench"></i></span><span>Service</span></button>
+      <button class="nav-btn" data-page="summary"><span class="nav-icon"><i data-lucide="bar-chart-2"></i></span><span>Summary</span></button>
+      <button class="nav-btn" data-page="settings"><span class="nav-icon"><i data-lucide="settings"></i></span><span>Settings</span></button>
     </nav>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/idb@7/build/umd.js"></script>
-  <script src="vendor/leaflet/leaflet.js"></script>
-  <script src="db.js"></script>
-  <script src="pages/vehicles.js"></script>
-  <script src="pages/dashboard.js"></script>
-  <script src="pages/logTrip.js"></script>
-  <script src="pages/logFuel.js"></script>
-  <script src="pages/tripHistory.js"></script>
-  <script src="pages/fuelHistory.js"></script>
-  <script src="pages/maintenance.js"></script>
-  <script src="pages/expenses.js"></script>
-  <script src="pages/summary.js"></script>
-  <script src="pages/exportPage.js"></script>
-  <script src="pages/settings.js"></script>
-  <script src="pages/locationPicker.js"></script>
-  <script src="app.js"></script>
+  <script src="./vendor/leaflet/leaflet.js"></script>
+  <script src="./db.js"></script>
+  <script src="./pages/vehicles.js"></script>
+  <script src="./pages/dashboard.js"></script>
+  <script src="./pages/logTrip.js"></script>
+  <script src="./pages/logFuel.js"></script>
+  <script src="./pages/tripHistory.js"></script>
+  <script src="./pages/fuelHistory.js"></script>
+  <script src="./pages/maintenance.js"></script>
+  <script src="./pages/expenses.js"></script>
+  <script src="./pages/summary.js"></script>
+  <script src="./pages/exportPage.js"></script>
+  <script src="./pages/settings.js"></script>
+  <script src="./pages/locationPicker.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
